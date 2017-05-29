@@ -99,6 +99,7 @@ end
 class BlacklistD
   def initialize
     @handle = Libblacklist.open
+    self.class.define_finaliser(@handle)
   end
 
   def close
@@ -129,6 +130,12 @@ class BlacklistD
       Libblacklist.blacklist_sa_r(@handle, action, io, addr, msg)
     else
       Libblacklist.blacklist_r(@handle, action, io, msg)
+    end
+  end
+
+  def self.define_finaliser(handle)
+    ObjectSpace.define_finalizer(handle) do
+      LibBlacklist.close(handle) if handle
     end
   end
 end

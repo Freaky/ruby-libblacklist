@@ -40,14 +40,14 @@ module Libblacklist
     if handle.null?
       raise SystemCallError.new("blacklist_open", LibBlacklist.errno)
     else
-      return handle
+      return FFI::AutoPointer.new(handle, LibBlacklist.method(:blacklist_close))
     end
   end
 
   def close(handle)
     raise ArgumentError unless handle.kind_of? FFI::Pointer
 
-    LibBlacklist.close(handle)
+    LibBlacklist.blacklist_close(handle)
   end
 
   def blacklist(action, io, msg)
@@ -99,7 +99,6 @@ end
 class BlacklistD
   def initialize
     @handle = Libblacklist.open
-    self.class.define_finaliser(@handle)
   end
 
   def close
@@ -108,19 +107,19 @@ class BlacklistD
   end
 
   def auth_ok(io, addr: nil)
-    blacklist(io: io, addr: addr, action: Action::AUTH_OK, msg: "ok")
+    blacklist(io: io, addr: addr, action: Libblacklist::Action::AUTH_OK, msg: "ok")
   end
 
   def auth_fail(io, addr: nil)
-    blacklist(io: io, addr: addr, action: Action::AUTH_FAIL, msg: "auth fail")
+    blacklist(io: io, addr: addr, action: Libblacklist::Action::AUTH_FAIL, msg: "auth fail")
   end
 
   def abusive(io, addr: nil)
-    blacklist(io: io, addr: addr, action: Action::ABUSIVE_BEHAVIOUR, msg: "abusive")
+    blacklist(io: io, addr: addr, action: Libblacklist::Action::ABUSIVE_BEHAVIOUR, msg: "abusive")
   end
 
   def bad_user(io, addr: nil)
-    blacklist(io: io, addr: addr, action: Action::BAD_USER, msg: "bad user")
+    blacklist(io: io, addr: addr, action: Libblacklist::Action::BAD_USER, msg: "bad user")
   end
 
   private
@@ -130,12 +129,6 @@ class BlacklistD
       Libblacklist.blacklist_sa_r(@handle, action, io, addr, msg)
     else
       Libblacklist.blacklist_r(@handle, action, io, msg)
-    end
-  end
-
-  def self.define_finaliser(handle)
-    ObjectSpace.define_finalizer(handle) do
-      LibBlacklist.close(handle) if handle
     end
   end
 end

@@ -25,7 +25,7 @@ The basic premise is something along the lines of:
 
 ```ruby
 blacklist = BlacklistD.new
-server = TCPSocket.new(...)
+server = TCPServer.new(...)
 
 loop do
   begin
